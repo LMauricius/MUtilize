@@ -17,6 +17,8 @@ Part of my MUtilize repo: https://github.com/LegendaryMauricius/MUtilize
 
 /*
 A simple class for ini files.
+The template allows you to specify the type used as a string, as well as the string, input, output and file stream types.
+Default is std::string.
 */
 template<
 	class _StringT = std::string,
@@ -37,10 +39,15 @@ public:
 	using OutputStream	= _OStreamT;
 	using FileStream	= _FStreamT;
 
+	struct FileError : public std::runtime_error {
+		FormatException() {}
+		FormatException(const std::string& what) : std::runtime_error(what) {}
+	};
+
 	struct FormatException : public std::runtime_error {
 		FormatException() {}
-		FormatException(const std::string& what, size_t line):
-			runtime_error(what),
+		FormatException(const std::string& what, size_t line) :
+			std::runtime_error(what),
 			line(line)
 		{}
 
@@ -221,7 +228,7 @@ public:
 		}
 	}
 
-	// Writes the content to the linked file
+	// Writes the content to the linked file. Throws FileError if the file can't be opened or isn't linked.
 	void sync() const {
 		FileStream file;
 		file.open(mFilename, std::ios::out);
@@ -231,7 +238,7 @@ public:
 			file.close();
 		}
 		else {
-			throw std::runtime_error(
+			throw FileError(
 				mFilename.length()? (std::stringstream() << "Can't open ini file \"" << mFilename << "\"!").str() : "No linked file specified to be synced to this MinIni!",
 				line);
 		}
@@ -247,5 +254,8 @@ public:
 		mAutoSync = false;
 	}
 };
+
+// widechar version of the default MinIni template
+using WMinIni = MinIni<std::wstring>;
 
 #endif
