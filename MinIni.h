@@ -1,3 +1,10 @@
+/*
+Made by Mauricius
+
+Part of my MUtilize repo: https://github.com/LegendaryMauricius/MUtilize
+*/
+
+#pragma once
 #ifndef _MININI_H
 #define _MININI_H
 
@@ -6,7 +13,11 @@
 #include <istream>
 #include <fstream>
 #include <sstream>
+#include <stdexcept>
 
+/*
+A simple class for ini files.
+*/
 template<
 	class _StringT = std::string,
 	class _SStreamT = std::basic_stringstream<_StringT::value_type>,
@@ -26,12 +37,22 @@ public:
 	using OutputStream	= _OStreamT;
 	using FileStream	= _FStreamT;
 
+	struct FormatException : public std::runtime_error {
+		FormatException() {}
+		FormatException(const std::string& what, size_t line):
+			runtime_error(what),
+			line(line)
+		{}
+
+		size_t line;
+	};
+
 	std::map<String, std::map<String, String> > dataMap;// dataMap[section][key] = value
 
-	MinIni() {}
+	MinIni(): mAutoSync(false) {}
 
 	/*
-	@param filename The name of the file to open
+	@param filename The name of the file to open and read
 	@param autosync If enabled, the file will automatically be synced to this MinIni's content before being closed
 	*/
 	MinIni(String filename, bool autosync) {
@@ -42,12 +63,26 @@ public:
 		close();
 	}
 
+	/*
+	The name of the file that's linked to this MinIni.
+	Note that the filename will be linked only if it's specified in the call to open() or in the constructor.
+	Using read() to read a file will not link the file.
+	*/
 	String filename() const {
 		return mFilename;
 	}
 
+	// If enabled, the linked file will automatically be synced to this MinIni's content before being closed or destroyed
 	bool autoSyncEnabled() const {
 		return mAutoSync;
+	}
+
+	void setFilename(String filename) {
+		mFilename = filename;
+	}
+
+	void enableAutoSync(bool enable = true) {
+		mAutoSync = enable;
 	}
 
 	// Returns the String value if it exists. If not, inserts the default value (def) and returns it
@@ -96,21 +131,30 @@ public:
 		setStr(sect, key, ss.str());
 	}
 
+	// Returns whether a value exists with the key in the section sect
 	bool exists(String sect, String key) const {
 		auto it = dataMap.find(sect);
 		return (it != dataMap.end() && it->second.find(key) != it->second.end());
 	}
 
-	void read(InputStream& is) {
-		dataMap.clear();
-
+	/*
+	Reads the content from the stream, adding it to the already existing content.
+	The stream needs to be formatted as an ini file.If not, a FormatException will be thrown, unless ignoreErrors argument is enabled.
+	In that case the improper line will be skipped, and the rest of the file will be read normally.
+	Note that specifying a FileStream as the input stream won't link the file, i.e. the filename won't be changed.
+	*/
+	void readMore(InputStream& is, bool ignoreErrors = false) {
 		String sect;
 		String ln;
+		size_t line = 0;
 		while (std::getline(is, ln)) {
+			line++;
+			size_t commentPos;
+
 			ln.erase(0, ln.find_first_not_of(L" \t"));
 			ln.erase(ln.find_last_not_of(L" \t") + 1);
-			if (ln.find_first_of(L"#") != String::npos) {
-				ln.erase(ln.find_first_of(L"#") + 1);
+			if ((commentPos = ln.find_first_of(L"#")) != String::npos) {
+				ln.erase(commentPos + 1);
 			}
 
 			if (ln.length()) {
@@ -122,6 +166,14 @@ public:
 				}
 				else {
 					size_t eqpos = ln.find_first_of('=');
+					if (eqpos != String::npos) {
+						if (!ignoreErrors)
+							throw FormatException((std::stringstream() <<
+								"Wrong ini file format at line " << line << "!"
+								).str(), line);
+						continue;
+					}
+
 					String key = ln.substr(0, eqpos);
 					key.erase(key.find_last_not_of(L" \t") + 1);
 					String val = ln.substr(eqpos + 1, String::npos);
@@ -133,6 +185,13 @@ public:
 		}
 	}
 
+	// Clears the content and reads it from the stream using readMore().
+	void read(InputStream& is, bool ignoreErrors = false) {
+		dataMap.clear();
+		readMore(is, ignoreErrors);
+	}
+
+	// Writes the content to the output stream, formatted as an ini file
 	void write(OutputStream& is) const {
 		for (auto& sect : dataMap) {
 			if (sect.first != L"") {
@@ -145,10 +204,11 @@ public:
 	}
 
 	/*
+	Reads the file and links it to this MinIni
 	@param filename The name of the file to open
 	@param autosync If enabled, the file will automatically be synced to this MinIni's content before being closed
 	*/
-	void open(String filename, bool autosync) {
+	void open(String filename, bool autosync, bool ignoreErrors = false) {
 		mFilename = filename;
 		mAutoSync = autosync;
 
@@ -156,11 +216,12 @@ public:
 		file.open(filename, std::ios::in);
 
 		if (file.good()) {
-			read(file);
+			read(file, ignoreErrors);
 			file.close();
 		}
 	}
 
+	// Writes the content to the linked file
 	void sync() const {
 		FileStream file;
 		file.open(mFilename, std::ios::out);
@@ -169,14 +230,21 @@ public:
 			write(file);
 			file.close();
 		}
+		else {
+			throw std::runtime_error(
+				mFilename.length()? (std::stringstream() << "Can't open ini file \"" << mFilename << "\"!").str() : "No linked file specified to be synced to this MinIni!",
+				line);
+		}
 	}
 
+	// Resets the MinIni and syncs the linked file before closing if autoSync is enabled.
 	void close() {
 		if (mFilename.length() && mAutoSync) {
 			sync();
 		}
-		inistruct.clear();
+		dataMap.clear();
 		mFilename = String();
+		mAutoSync = false;
 	}
 };
 
