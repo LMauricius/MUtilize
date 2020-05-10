@@ -45,60 +45,60 @@ public:
 	*/
 
 	// normal iterator. This one gets invalidated when the queue's capacity changes
-	template<class _T>
+	template<class _ItT>
 	class _IteratorImpl {
+	public:
+		using iterator_category = std::random_access_iterator_tag;
+		using value_type = _ItT;
+		using difference_type = std::ptrdiff_t;
+		using pointer = _IteratorImpl::value_type*;
+		using reference = _IteratorImpl::value_type&;
+		using const_pointer = const _IteratorImpl::value_type*;
+		using const_reference = const _IteratorImpl::value_type&;
 	private:
-		value_type *mElement, *mWrapPoint, *mBufferBegin;
+		_IteratorImpl::value_type *mElement, *mWrapPoint, *mBufferBegin;
 
-		// Whether the pointer has wrapped around the buffer end
+		// Whether the _IteratorImpl::pointer has wrapped around the buffer end
 		bool mWrapped;
 		
-		inline value_type* calcOffsetPtr(std::ptrdiff_t offset) {
+		inline _IteratorImpl::value_type* calcOffsetPtr(std::ptrdiff_t offset) {
 			return (
 				mBufferBegin + (mElement - mBufferBegin + offset) % (mWrapPoint - mBufferBegin)
 				);
 		}
 
 	public:
-		using iterator_category = std::random_access_iterator_tag;
-		using value_type = _T;
-		using difference_type = std::ptrdiff_t;
-		using pointer = value_type*;
-		using reference = value_type&;
-		using const_pointer = const value_type*;
-		using const_reference = const value_type&;
-
 		inline _IteratorImpl() noexcept {}
-		inline _IteratorImpl(const _IteratorImpl<value_type>& it) noexcept :
+		inline _IteratorImpl(const _IteratorImpl<_IteratorImpl::value_type>& it) noexcept :
 			mWrapped(it.mWrapped),
 			mElement(it.mElement),
 			mWrapPoint(it.mWrapPoint),
 			mBufferBegin(it.mBufferBegin)
 		{}
-		inline _IteratorImpl(value_type* element, bool wrapped, value_type* wrapPoint, value_type* bufferBegin) noexcept :
+		inline _IteratorImpl(_IteratorImpl::value_type* element, bool wrapped, _IteratorImpl::value_type* wrapPoint, _IteratorImpl::value_type* bufferBegin) noexcept :
 			mElement(element),
 			mWrapped(wrapped),
 			mWrapPoint(wrapPoint),
 			mBufferBegin(bufferBegin)
 		{
 		}
-		inline value_type* operator->() const {
+		inline _IteratorImpl::value_type* operator->() const {
 			return mElement;
 		}
-		inline value_type operator*() const {
+		inline _IteratorImpl::reference operator*() const {
 			return *mElement;
 		}
-		inline reference operator[](size_t offset) const {
+		inline _IteratorImpl::reference operator[](size_t offset) const {
 			return *calcOffsetPtr(offset);
 		}
-		inline _IteratorImpl<value_type>& operator=(const _IteratorImpl<value_type>& it) noexcept {
+		inline _IteratorImpl<_IteratorImpl::value_type>& operator=(const _IteratorImpl<_IteratorImpl::value_type>& it) noexcept {
 			mWrapped = it.mWrapped;
 			mElement = it.mElement;
 			mWrapPoint = it.mWrapPoint;
 			mBufferBegin = it.mBufferBegin;
 			return *this;
 		}
-		inline _IteratorImpl<value_type>& operator+=(difference_type offset) noexcept {
+		inline _IteratorImpl<_IteratorImpl::value_type>& operator+=(_IteratorImpl::difference_type offset) noexcept {
 			if (mElement + offset >= mWrapPoint) {
 				mElement -= (mWrapPoint - mBufferBegin);
 				mWrapped = true;
@@ -110,7 +110,7 @@ public:
 			mElement += offset;
 			return *this;
 		}
-		inline _IteratorImpl<value_type>& operator-=(difference_type offset) noexcept {
+		inline _IteratorImpl<_IteratorImpl::value_type>& operator-=(_IteratorImpl::difference_type offset) noexcept {
 			if (mElement - offset < mBufferBegin) {
 				mElement += (mWrapPoint - mBufferBegin);
 				mWrapped = false;
@@ -122,19 +122,19 @@ public:
 			mElement -= offset;
 			return *this;
 		}
-		inline _IteratorImpl<value_type> operator+(difference_type offset) const noexcept {
+		inline _IteratorImpl<_IteratorImpl::value_type> operator+(_IteratorImpl::difference_type offset) const noexcept {
 			return iterator(mElement, mWrapped, mWrapPoint, mBufferBegin) += offset;
 		}
-		inline _IteratorImpl<value_type> operator-(difference_type offset) const noexcept {
+		inline _IteratorImpl<_IteratorImpl::value_type> operator-(_IteratorImpl::difference_type offset) const noexcept {
 			return iterator(mElement, mWrapped, mWrapPoint, mBufferBegin) -= offset;
 		}
-		inline difference_type operator-(const _IteratorImpl<value_type>& it) const noexcept {
+		inline _IteratorImpl::difference_type operator-(const _IteratorImpl<_IteratorImpl::value_type>& it) const noexcept {
 			return (
 				(mWrapped? mElement + (mWrapPoint - mBufferBegin): mElement) - 
 				(it.mWrapped? it.mElement + (mWrapPoint - mBufferBegin) : it.mElement)
 				);
 		}
-		inline _IteratorImpl<value_type>& operator++() noexcept {
+		inline _IteratorImpl<_IteratorImpl::value_type>& operator++() noexcept {
 			mElement++;
 			if (mElement == mWrapPoint) {
 				mElement = mBufferBegin;
@@ -142,7 +142,7 @@ public:
 			}
 			return *this;
 		}
-		inline _IteratorImpl<value_type>& operator--() noexcept {
+		inline _IteratorImpl<_IteratorImpl::value_type>& operator--() noexcept {
 			if (mElement == mBufferBegin) {
 				mElement = mWrapPoint;
 				mWrapped = false;
@@ -150,32 +150,32 @@ public:
 			mElement--;
 			return *this;
 		}
-		inline _IteratorImpl<value_type> operator++(int) noexcept {
-			iterator old = *this;
+		inline _IteratorImpl<_IteratorImpl::value_type> operator++(int) noexcept {
+			_IteratorImpl<_IteratorImpl::value_type> old = *this;
 			(*this)++;
 			return old;
 		}
-		inline _IteratorImpl<value_type> operator--(int) noexcept {
-			iterator old = *this;
+		inline _IteratorImpl<_IteratorImpl::value_type> operator--(int) noexcept {
+			_IteratorImpl<_IteratorImpl::value_type> old = *this;
 			(*this)--;
 			return old;
 		}
-		inline bool operator==(const _IteratorImpl<value_type>& it) const noexcept {
+		inline bool operator==(const _IteratorImpl<_IteratorImpl::value_type>& it) const noexcept {
 			return mElement == it.mElement && mWrapped == it.mWrapped;
 		}
-		inline bool operator!=(const _IteratorImpl<value_type>& it) const noexcept {
+		inline bool operator!=(const _IteratorImpl<_IteratorImpl::value_type>& it) const noexcept {
 			return mWrapped != it.mWrapped || mElement != it.mElement;
 		}
-		inline bool operator<(const _IteratorImpl<value_type>& it) const noexcept {
+		inline bool operator<(const _IteratorImpl<_IteratorImpl::value_type>& it) const noexcept {
 			return (mElement < it.mElement && mWrapped == it.mWrapped) || (!mWrapped && it.mWrapped);
 		}
-		inline bool operator>(const _IteratorImpl<value_type>& it) const noexcept {
+		inline bool operator>(const _IteratorImpl<_IteratorImpl::value_type>& it) const noexcept {
 			return (mElement > it.mElement && mWrapped == it.mWrapped) || (mWrapped && !it.mWrapped);
 		}
-		inline bool operator<=(const _IteratorImpl<value_type>& it) const noexcept {
+		inline bool operator<=(const _IteratorImpl<_IteratorImpl::value_type>& it) const noexcept {
 			return (mElement <= it.mElement && mWrapped == it.mWrapped) || (!mWrapped && it.mWrapped);
 		}
-		inline bool operator>=(const _IteratorImpl<value_type>& it) const noexcept {
+		inline bool operator>=(const _IteratorImpl<_IteratorImpl::value_type>& it) const noexcept {
 			return (mElement >= it.mElement && mWrapped == it.mWrapped) || (mWrapped && !it.mWrapped);
 		}
 		inline operator bool() const noexcept {
@@ -186,98 +186,99 @@ public:
 	// persistent iterator, that is not invalidated as long as it's in the range
 	friend class _PersistentIteratorImpl;
 
-	template<class _T>
+	template<class _ItT>
 	class _PersistentIteratorImpl {
+	public:
+		using iterator_category = std::random_access_iterator_tag;
+		using value_type = _ItT;
+		using difference_type = std::ptrdiff_t;
+		using pointer = _PersistentIteratorImpl::value_type*;
+		using reference = _PersistentIteratorImpl::value_type;
+
 	private:
-		circular_queue<value_type> *mOwner;
-		value_type *mElement;
-		// ID of the pointed element. This is used to calculate the pointer to the actual element.
+		circular_queue<_PersistentIteratorImpl::value_type> *mOwner;
+		_PersistentIteratorImpl::value_type *mElement;
+		// ID of the pointed element. This is used to calculate the _PersistentIteratorImpl::pointer to the actual element.
 		size_t mID;
 
 	public:
-		using iterator_category = std::random_access_iterator_tag;
-		using value_type = _T;
-		using difference_type = std::ptrdiff_t;
-		using pointer = value_type*;
-		using reference = reference;
-
 		inline _PersistentIteratorImpl() noexcept {}
-		inline _PersistentIteratorImpl(const _PersistentIteratorImpl<value_type>& it) noexcept :
+		inline _PersistentIteratorImpl(const _PersistentIteratorImpl<_PersistentIteratorImpl::value_type>& it) noexcept :
 			mElement(it.mElement),
 			mOwner(it.mOwner),
 			mID(it.mID)
 		{}
-		inline _PersistentIteratorImpl(size_t id, circular_queue<value_type>* owner) noexcept :
+		inline _PersistentIteratorImpl(size_t id, circular_queue<_PersistentIteratorImpl::value_type>* owner) noexcept :
 			mID(id),
 			mOwner(owner)
 		{
 		}
-		inline value_type* operator->() const {
+		inline _PersistentIteratorImpl::value_type* operator->() const {
 			return mOwner->mBuffer.data() + ((mOwner->mBeginOffset + mID - mOwner->mIDOffset) % mOwner->mBuffer.capacity());
 		}
-		inline value_type operator*() const {
+		inline _PersistentIteratorImpl::reference operator*() const {
 			return *(mOwner->mBuffer.data() + ((mOwner->mBeginOffset + mID - mOwner->mIDOffset) % mOwner->mBuffer.capacity()));
 		}
-		inline reference operator[](size_t offset) const {
+		inline _PersistentIteratorImpl::reference operator[](size_t offset) const {
 			return *(mOwner->mBuffer.data() + ((mOwner->mBeginOffset + mID + offset - mOwner->mIDOffset) % mOwner->mBuffer.capacity()));
 		}
-		inline _PersistentIteratorImpl<value_type>& operator=(const _PersistentIteratorImpl<value_type>& it) noexcept {
+		inline _PersistentIteratorImpl<_PersistentIteratorImpl::value_type>& operator=(const _PersistentIteratorImpl<_PersistentIteratorImpl::value_type>& it) noexcept {
 			mID = it.mID;
 			mElement = it.mElement;
 			mOwner = it.mOwner;
 			return *this;
 		}
-		inline _PersistentIteratorImpl<value_type>& operator+=(difference_type offset) noexcept {
+		inline _PersistentIteratorImpl<_PersistentIteratorImpl::value_type>& operator+=(_PersistentIteratorImpl::difference_type offset) noexcept {
 			mID += offset;
 			return *this;
 		}
-		inline _PersistentIteratorImpl<value_type>& operator-=(difference_type offset) noexcept {
+		inline _PersistentIteratorImpl<_PersistentIteratorImpl::value_type>& operator-=(_PersistentIteratorImpl::difference_type offset) noexcept {
 			mID -= offset;
 			return *this;
 		}
-		inline _PersistentIteratorImpl<value_type> operator+(difference_type offset) const noexcept {
-			return _PersistentIteratorImpl<value_type>(mID + offset, mOwner);
+		inline _PersistentIteratorImpl<_PersistentIteratorImpl::value_type> operator+(_PersistentIteratorImpl::difference_type offset) const noexcept {
+			return _PersistentIteratorImpl<_PersistentIteratorImpl::value_type>(mID + offset, mOwner);
 		}
-		inline _PersistentIteratorImpl<value_type> operator-(difference_type offset) const noexcept {
-			return _PersistentIteratorImpl<value_type>(mID - offset, mOwner);
+		inline _PersistentIteratorImpl<_PersistentIteratorImpl::value_type> operator-(_PersistentIteratorImpl::difference_type offset) const noexcept {
+			return _PersistentIteratorImpl<_PersistentIteratorImpl::value_type>(mID - offset, mOwner);
 		}
-		inline difference_type operator-(const _PersistentIteratorImpl<value_type>& offset) const noexcept {
+		inline _PersistentIteratorImpl::difference_type operator-(const _PersistentIteratorImpl<_PersistentIteratorImpl::value_type>& offset) const noexcept {
 			return mID - offset.mId;
 		}
-		inline _PersistentIteratorImpl<value_type>& operator++() noexcept {
+		inline _PersistentIteratorImpl<_PersistentIteratorImpl::value_type>& operator++() noexcept {
 			mID++;
 			return *this;
 		}
-		inline _PersistentIteratorImpl<value_type>& operator--() noexcept {
+		inline _PersistentIteratorImpl<_PersistentIteratorImpl::value_type>& operator--() noexcept {
 			mID--;
 			return *this;
 		}
-		inline _PersistentIteratorImpl<value_type> operator++(int) noexcept {
-			_PersistentIteratorImpl<value_type> old = *this;
+		inline _PersistentIteratorImpl<_PersistentIteratorImpl::value_type> operator++(int) noexcept {
+			_PersistentIteratorImpl<_PersistentIteratorImpl::value_type> old = *this;
 			(*this)++;
 			return old;
 		}
-		inline _PersistentIteratorImpl<value_type> operator--(int) noexcept {
-			_PersistentIteratorImpl<value_type> old = *this;
+		inline _PersistentIteratorImpl<_PersistentIteratorImpl::value_type> operator--(int) noexcept {
+			_PersistentIteratorImpl<_PersistentIteratorImpl::value_type> old = *this;
 			(*this)--;
 			return old;
 		}
-		inline bool operator==(const _PersistentIteratorImpl<value_type>& it) const noexcept {
+		inline bool operator==(const _PersistentIteratorImpl<_PersistentIteratorImpl::value_type>& it) const noexcept {
 			return mID == it.mID;
 		}
-		inline bool operator!=(const _PersistentIteratorImpl<value_type>& it) const noexcept {
+		inline bool operator!=(const _PersistentIteratorImpl<_PersistentIteratorImpl::value_type>& it) const noexcept {
 			return mID != it.mID;
 		}
-		inline bool operator<(const _PersistentIteratorImpl<value_type>& it) const noexcept {
+		inline bool operator<(const _PersistentIteratorImpl<_PersistentIteratorImpl::value_type>& it) const noexcept {
 			return mID < it.mID;
 		}
-		inline bool operator>(const _PersistentIteratorImpl<value_type>& it) const noexcept {
+		inline bool operator>(const _PersistentIteratorImpl<_PersistentIteratorImpl::value_type>& it) const noexcept {
 			return mID > it.mID;
 		}
-		inline bool operator<=(const _PersistentIteratorImpl<value_type>& it) const noexcept {
+		inline bool operator<=(const _PersistentIteratorImpl<_PersistentIteratorImpl::value_type>& it) const noexcept {
 			return mID <= it.mID;
 		}
-		inline bool operator>=(const _PersistentIteratorImpl<value_type>& it) const noexcept {
+		inline bool operator>=(const _PersistentIteratorImpl<_PersistentIteratorImpl::value_type>& it) const noexcept {
 			return mID >= it.mID;
 		}
 		inline operator bool() const noexcept {
@@ -524,11 +525,11 @@ public:
 
 	inline iterator end() noexcept {
 		return iterator((
-			(mBeginOffset + mSize <= mBuffer.capacity()) ?
+			(mBeginOffset + mSize < mBuffer.capacity()) ?
 				mBuffer.data() + mBeginOffset + mSize :
 				mBuffer.data() + mBeginOffset + mSize - mBuffer.capacity()
 			),
-			(mBeginOffset + mSize > mBuffer.capacity()), mBuffer.data() + mBuffer.capacity(), mBuffer.data());
+			(mBeginOffset + mSize >= mBuffer.capacity()), mBuffer.data() + mBuffer.capacity(), mBuffer.data());
 	}
 
 	inline const_iterator begin() const noexcept {
@@ -537,11 +538,11 @@ public:
 
 	inline const_iterator end() const noexcept {
 		return const_iterator((
-			(mBeginOffset + mSize <= mBuffer.capacity()) ?
+			(mBeginOffset + mSize < mBuffer.capacity()) ?
 				mBuffer.data() + mBeginOffset + mSize :
 				mBuffer.data() + mBeginOffset + mSize - mBuffer.capacity()
 			),
-			(mBeginOffset + mSize > mBuffer.capacity()), mBuffer.data() + mBuffer.capacity(), mBuffer.data());
+			(mBeginOffset + mSize >= mBuffer.capacity()), mBuffer.data() + mBuffer.capacity(), mBuffer.data());
 	}
 
 	inline const_iterator cbegin() const noexcept {

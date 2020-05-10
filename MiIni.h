@@ -21,27 +21,29 @@ The template allows you to specify the type used as a string, as well as the str
 Default is std::string.
 */
 template<
-	class _StringT = std::string,
-	class _SStreamT = std::basic_stringstream<_StringT::value_type>,
-	class _IStreamT = std::basic_istream<_StringT::value_type>,
-	class _OStreamT = std::basic_ostream<_StringT::value_type>,
-	class _FStreamT = std::basic_fstream<_StringT::value_type> >
+	class _StringT = std::string >
 class MiIni
 {
-private:
-	String mFilename;
-	bool mAutoSync;
-
 public:
+	using _SStreamT = std::basic_stringstream<typename _StringT::value_type>;
+	using _IStreamT = std::basic_istream<typename _StringT::value_type>;
+	using _OStreamT = std::basic_ostream<typename _StringT::value_type>;
+	using _FStreamT = std::basic_fstream<typename _StringT::value_type>;
 	using String		= _StringT;
 	using StringStream	= _SStreamT;
 	using InputStream	= _IStreamT;
 	using OutputStream	= _OStreamT;
 	using FileStream	= _FStreamT;
 
+private:
+	String mFilename;
+	bool mAutoSync;
+
+public:
+
 	struct FileError : public std::runtime_error {
-		FormatException() {}
-		FormatException(const std::string& what) : std::runtime_error(what) {}
+		FileError() {}
+		FileError(const std::string& what) : std::runtime_error(what) {}
 	};
 
 	struct FormatException : public std::runtime_error {
@@ -113,7 +115,7 @@ public:
 
 	// Returns the value if it exists. If not, inserts the default value (def) and returns it. val must be streamable to and from a StringStream.
 	template<class _T>
-	T get(String sect, String key, _T def = _T()) {
+	_T get(String sect, String key, _T def = _T()) {
 		StringStream ss;
 		auto& keyvalmap = dataMap[sect];
 
@@ -125,6 +127,7 @@ public:
 		}
 		else {
 			ss << it->second;
+			_T ret;
 			ss >> ret;
 			return ret;
 		}
@@ -158,33 +161,37 @@ public:
 			line++;
 			size_t commentPos;
 
-			ln.erase(0, ln.find_first_not_of(L" \t"));
-			ln.erase(ln.find_last_not_of(L" \t") + 1);
-			if ((commentPos = ln.find_first_of(L"#")) != String::npos) {
+			StringStream spacesSS;
+			spacesSS << " \t";
+			String spaces = spacesSS.str();
+
+			ln.erase(0, ln.find_first_not_of(spaces));
+			ln.erase(ln.find_last_not_of(spaces) + 1);
+			if ((commentPos = ln.find_first_of('#')) != String::npos) {
 				ln.erase(commentPos + 1);
 			}
 
 			if (ln.length()) {
 				if (ln[0] == '[') {
 					sect = ln.substr(1, ln.find_first_of(']') - 1);
-					sect.erase(0, sect.find_first_not_of(L" \t"));
-					sect.erase(sect.find_last_not_of(L" \t") + 1);
+					sect.erase(0, sect.find_first_not_of(spaces));
+					sect.erase(sect.find_last_not_of(spaces) + 1);
 					dataMap[sect];
 				}
 				else {
 					size_t eqpos = ln.find_first_of('=');
-					if (eqpos != String::npos) {
+					if (eqpos == String::npos) {
 						if (!ignoreErrors)
-							throw FormatException((std::stringstream() <<
+							throw FormatException(((std::stringstream&)(std::stringstream() <<
 								"Wrong ini file format at line " << line << "!"
-								).str(), line);
+								)).str(), line);
 						continue;
 					}
 
 					String key = ln.substr(0, eqpos);
-					key.erase(key.find_last_not_of(L" \t") + 1);
+					key.erase(key.find_last_not_of(spaces) + 1);
 					String val = ln.substr(eqpos + 1, String::npos);
-					val.erase(0, val.find_first_not_of(L" \t"));
+					val.erase(0, val.find_first_not_of(spaces));
 
 					dataMap[sect][key] = val;
 				}
@@ -199,14 +206,15 @@ public:
 	}
 
 	// Writes the content to the output stream, formatted as an ini file
-	void write(OutputStream& is) const {
+	void write(OutputStream& os) const {
 		for (auto& sect : dataMap) {
-			if (sect.first != L"") {
-				file << "[" << sect.first << "]\n";
+			if (sect.first != String()) {
+				os << "[" << sect.first << "]\n";
 			}
 			for (auto& keyval : sect.second) {
-				file << keyval.first << " = " << keyval.second << "\n";
+				os << keyval.first << " = " << keyval.second << std::endl;
 			}
+			os << std::endl;
 		}
 	}
 
@@ -219,7 +227,7 @@ public:
 		mFilename = filename;
 		mAutoSync = autosync;
 
-		FStream file;
+		FileStream file;
 		file.open(filename, std::ios::in);
 
 		if (file.good()) {
@@ -238,9 +246,11 @@ public:
 			file.close();
 		}
 		else {
-			throw FileError(
-				mFilename.length()? (std::stringstream() << "Can't open ini file \"" << mFilename << "\"!").str() : "No linked file specified to be synced to this MinIni!",
-				line);
+			throw std::runtime_error(
+				mFilename.length()? 
+					((std::stringstream&)(std::stringstream() << 
+						"Can't open ini file \"" << mFilename << "\"!")).str() : 
+					"No linked file specified to be synced to this MinIni!");
 		}
 	}
 
