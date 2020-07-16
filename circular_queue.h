@@ -123,10 +123,10 @@ public:
 			return *this;
 		}
 		inline _IteratorImpl<_IteratorImpl::value_type> operator+(_IteratorImpl::difference_type offset) const noexcept {
-			return iterator(mElement, mWrapped, mWrapPoint, mBufferBegin) += offset;
+			return _IteratorImpl<_IteratorImpl::value_type>(mElement, mWrapped, mWrapPoint, mBufferBegin) += offset;
 		}
 		inline _IteratorImpl<_IteratorImpl::value_type> operator-(_IteratorImpl::difference_type offset) const noexcept {
-			return iterator(mElement, mWrapped, mWrapPoint, mBufferBegin) -= offset;
+			return _IteratorImpl<_IteratorImpl::value_type>(mElement, mWrapped, mWrapPoint, mBufferBegin) -= offset;
 		}
 		inline _IteratorImpl::difference_type operator-(const _IteratorImpl<_IteratorImpl::value_type>& it) const noexcept {
 			return (
@@ -196,7 +196,7 @@ public:
 		using reference = _PersistentIteratorImpl::value_type;
 
 	private:
-		circular_queue<_PersistentIteratorImpl::value_type> *mOwner;
+		circular_queue<_T> *mOwner;
 		_PersistentIteratorImpl::value_type *mElement;
 		// ID of the pointed element. This is used to calculate the _PersistentIteratorImpl::pointer to the actual element.
 		size_t mID;
