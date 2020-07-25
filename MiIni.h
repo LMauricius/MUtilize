@@ -141,6 +141,11 @@ public:
 		setStr(sect, key, ss.str());
 	}
 
+	// Returns whether a section exists
+	bool exists(String sect) const {
+		return (dataMap.find(sect) != dataMap.end());
+	}
+
 	// Returns whether a value exists with the key in the section sect
 	bool exists(String sect, String key) const {
 		auto it = dataMap.find(sect);
@@ -168,7 +173,7 @@ public:
 			ln.erase(0, ln.find_first_not_of(spaces));
 			ln.erase(ln.find_last_not_of(spaces) + 1);
 			if ((commentPos = ln.find_first_of('#')) != String::npos) {
-				ln.erase(commentPos + 1);
+				ln.erase(commentPos);
 			}
 
 			if (ln.length()) {

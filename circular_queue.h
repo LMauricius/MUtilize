@@ -415,6 +415,14 @@ public:
 		return mBuffer[mBeginOffset];
 	}
 
+	inline reference back() {
+		return mBuffer[
+			(mBeginOffset + mSize - 1 < mBuffer.capacity()) ?
+				mBeginOffset + mSize - 1 :
+				mBeginOffset + mSize - 1 - mBuffer.capacity()
+			];
+	}
+
 	inline const_reference front() const {
 		return mBuffer[mBeginOffset];
 	}

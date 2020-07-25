@@ -20,7 +20,7 @@ class SlotArray
 {
 private:
 	std::vector<_T, _Alloc> mSlots;
-	std::vector<bool> mAreSlotsFree;// Whether a slot is free
+	std::vector<unsigned char> mAreSlotsFree;// Whether a slot is free
 	size_t mSize;
 
 public:
@@ -37,11 +37,11 @@ public:
 	Iterator definitions
 	*/
 
-	// normal iterator. This one gets invalidated when the queue's capacity changes
+	// normal iterator. This one gets invalidated when the array's capacity changes
 	template<class _ItT>
 	class _IteratorImpl {
 	public:
-		using iterator_category = std::random_access_iterator_tag;
+		using iterator_category = std::bidirectional_iterator_tag;
 		using value_type = _ItT;
 		using difference_type = std::ptrdiff_t;
 		using pointer = _IteratorImpl::value_type*;
@@ -51,7 +51,7 @@ public:
 	private:
 
 		_IteratorImpl::value_type* mElement;
-		const bool* mElementFree;
+		const unsigned char* mElementFree;
 
 	public:
 		inline _IteratorImpl() noexcept {}
@@ -59,7 +59,7 @@ public:
 			mElement(it.mElement),
 			mElementFree(it.mElementFree)
 		{}
-		inline _IteratorImpl(_IteratorImpl::value_type* element, const bool* elementFree) noexcept :
+		inline _IteratorImpl(_IteratorImpl::value_type* element, const unsigned char* elementFree) noexcept :
 			mElement(element),
 			mElementFree(elementFree)
 		{
@@ -70,50 +70,27 @@ public:
 		inline _IteratorImpl::reference operator*() const {
 			return *mElement;
 		}
-		inline _IteratorImpl::reference operator[](size_t offset) {
-			*(mElementFree + offset) = false;
-			return *(mElement + offset);
-		}
-		inline _IteratorImpl::reference operator[](size_t offset) const {
-			if (*(mElementFree + offset))
-				throw std::out_of_range("Trying to access a free slot of a const SlotArray. "
-					"Accessing the slot's content would need to take the slot first,"
-					"which is impossible since the SlotArray iterator is const.");
-			else
-				return *(mElement+offset);
-		}
 		inline _IteratorImpl<_IteratorImpl::value_type>& operator=(const _IteratorImpl<_IteratorImpl::value_type>& it) noexcept {
 			mElementFree = it.mElementFree;
 			mElement = it.mElement;
 			return *this;
 		}
-		inline _IteratorImpl<_IteratorImpl::value_type>& operator+=(_IteratorImpl::difference_type offset) noexcept {
-			mElementFree += offset;
-			mElement += offset;
-			return *this;
-		}
-		inline _IteratorImpl<_IteratorImpl::value_type>& operator-=(_IteratorImpl::difference_type offset) noexcept {
-			mElementFree -= offset;
-			mElement -= offset;
-			return *this;
-		}
-		inline _IteratorImpl<_IteratorImpl::value_type> operator+(_IteratorImpl::difference_type offset) const noexcept {
-			return _IteratorImpl<_IteratorImpl::value_type>(mElement + offset, mElementFree + offset);
-		}
-		inline _IteratorImpl<_IteratorImpl::value_type> operator-(_IteratorImpl::difference_type offset) const noexcept {
-			return _IteratorImpl<_IteratorImpl::value_type>(mElement - offset, mElementFree - offset);
-		}
+		// This can be used to calculate the element's index in the array
 		inline _IteratorImpl::difference_type operator-(const _IteratorImpl<_IteratorImpl::value_type>& it) const noexcept {
 			return (mElement - it.mElement);
 		}
 		inline _IteratorImpl<_IteratorImpl::value_type>& operator++() noexcept {
-			mElement++;
-			mElementFree++;
+			do {
+				mElement++;
+				mElementFree++;
+			} while (*mElementFree);
 			return *this;
 		}
 		inline _IteratorImpl<_IteratorImpl::value_type>& operator--() noexcept {
-			mElement--;
-			mElementFree--;
+			do {
+				mElement--;
+				mElementFree--;
+			} while (*mElementFree);
 			return *this;
 		}
 		inline _IteratorImpl<_IteratorImpl::value_type> operator++(int) noexcept {
@@ -130,7 +107,7 @@ public:
 			return mElement == it.mElement;
 		}
 		inline bool operator!=(const _IteratorImpl<_IteratorImpl::value_type>& it) const noexcept {
-			return mWrapped != it.mWrapped;
+			return mElement != it.mElement;
 		}
 		inline bool operator<(const _IteratorImpl<_IteratorImpl::value_type>& it) const noexcept {
 			return (mElement < it.mElement);
@@ -155,7 +132,7 @@ public:
 	template<class _ItT>
 	class _PersistentIteratorImpl {
 	public:
-		using iterator_category = std::random_access_iterator_tag;
+		using iterator_category = std::bidirectional_iterator_tag;
 		using value_type = _ItT;
 		using difference_type = std::ptrdiff_t;
 		using pointer = _PersistentIteratorImpl::value_type*;
@@ -171,7 +148,7 @@ public:
 			mOwner(it.mOwner),
 			mInd(it.mInd)
 		{}
-		inline _PersistentIteratorImpl(size_t id, circular_queue<_PersistentIteratorImpl::value_type>* owner) noexcept :
+		inline _PersistentIteratorImpl(size_t id, SlotArray<_T>* owner) noexcept :
 			mInd(id),
 			mOwner(owner)
 		{
@@ -190,29 +167,20 @@ public:
 			mOwner = it.mOwner;
 			return *this;
 		}
-		inline _PersistentIteratorImpl<_PersistentIteratorImpl::value_type>& operator+=(_PersistentIteratorImpl::difference_type offset) noexcept {
-			mInd += offset;
-			return *this;
-		}
-		inline _PersistentIteratorImpl<_PersistentIteratorImpl::value_type>& operator-=(_PersistentIteratorImpl::difference_type offset) noexcept {
-			mInd -= offset;
-			return *this;
-		}
-		inline _PersistentIteratorImpl<_PersistentIteratorImpl::value_type> operator+(_PersistentIteratorImpl::difference_type offset) const noexcept {
-			return _PersistentIteratorImpl<_PersistentIteratorImpl::value_type>(mInd + offset, mOwner);
-		}
-		inline _PersistentIteratorImpl<_PersistentIteratorImpl::value_type> operator-(_PersistentIteratorImpl::difference_type offset) const noexcept {
-			return _PersistentIteratorImpl<_PersistentIteratorImpl::value_type>(mInd - offset, mOwner);
-		}
 		inline _PersistentIteratorImpl::difference_type operator-(const _PersistentIteratorImpl<_PersistentIteratorImpl::value_type>& it) const noexcept {
 			return mInd - it.mInd;
 		}
 		inline _PersistentIteratorImpl<_PersistentIteratorImpl::value_type>& operator++() noexcept {
-			mInd++;
+			do {
+				mInd++;
+			} while (mOwner->isSlotFree(mInd) && mInd != mOwner->slotCount());
 			return *this;
 		}
 		inline _PersistentIteratorImpl<_PersistentIteratorImpl::value_type>& operator--() noexcept {
-			mInd--;
+			do
+			{
+				mInd--;
+			} while (mOwner->isSlotFree(mInd));
 			return *this;
 		}
 		inline _PersistentIteratorImpl<_PersistentIteratorImpl::value_type> operator++(int) noexcept {
@@ -265,7 +233,9 @@ public:
 
 	SlotArray():
 		mSize(0)
-	{}
+	{
+		mAreSlotsFree.push_back(false);// The slot past the mSlots buffer isn't really free, so we mark it as that
+	}
 
 	_T& operator[](size_t slot)
 	{
@@ -276,7 +246,8 @@ public:
 			for (int i = mSlots.size(); i < slot; i++)
 			{
 				mSlots.push_back(_T());
-				mAreSlotsFree.push_back(true);
+				mAreSlotsFree.back() = true;
+				mAreSlotsFree.push_back(false);// Keep one non-free slot past the mSlots buffer
 			}
 			mSlots.push_back(_T());
 			mAreSlotsFree.push_back(false);
@@ -329,6 +300,7 @@ public:
 	{
 		mSlots.clear();
 		mAreSlotsFree.clear();
+		mAreSlotsFree.push_back(false);
 		mSize = 0;
 	}
 
@@ -375,7 +347,7 @@ public:
 	}
 
 	inline iterator end() noexcept {
-		return iterator(mSlots.data() + mSlots.size(), mAreSlotsFree.data() + mSlots.size());
+		return iterator(mSlots.data() + slotCount(), mAreSlotsFree.data() + slotCount());
 	}
 
 	inline const_iterator begin() const noexcept {
@@ -383,7 +355,7 @@ public:
 	}
 
 	inline const_iterator end() const noexcept {
-		return const_iterator(mSlots.data() + mSlots.size(), mAreSlotsFree.data() + mSlots.size());
+		return const_iterator(mSlots.data() + slotCount(), mAreSlotsFree.data() + slotCount());
 	}
 
 	inline const_iterator cbegin() const noexcept {
