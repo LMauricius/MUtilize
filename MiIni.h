@@ -67,6 +67,8 @@ public:
 	MiIni(String filename, bool autosync) {
 		open(filename, autosync);
 	}
+	
+	// Default copy-constructors and assignments are okay
 
 	~MiIni() {
 		close();
