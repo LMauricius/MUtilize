@@ -97,7 +97,7 @@ public:
 	}
 
 	// Returns the String value if it exists. If not, inserts the default value (def) and returns it
-	String getStr(String sect, String key, String def) {
+	String getStr(String sect, String key, String def = String()) {
 		auto& keyvalmap = dataMap[sect];
 
 		auto it = keyvalmap.find(key);
@@ -169,7 +169,7 @@ public:
 			size_t commentPos;
 
 			StringStream spacesSS;
-			spacesSS << " \t";
+			spacesSS << " \t\r\n";
 			String spaces = spacesSS.str();
 
 			ln.erase(0, ln.find_first_not_of(spaces));
@@ -256,7 +256,7 @@ public:
 			throw std::runtime_error(
 				mFilename.length()? 
 					((std::stringstream&)(std::stringstream() << 
-						"Can't open ini file \"" << mFilename << "\"!")).str() : 
+						"Can't open ini file \"" << std::string(mFilename.begin(), mFilename.end()) << "\"!")).str() :
 					"No linked file specified to be synced to this MinIni!");
 		}
 	}
