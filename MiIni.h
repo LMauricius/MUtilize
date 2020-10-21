@@ -135,6 +135,14 @@ public:
 		}
 	}
 
+	std::string get(String sect, String key, const char* def = "") {
+		return get(sect, key, std::string(def));
+	}
+
+	std::string get(String sect, String key, const wchar_t* def = "") {
+		return get(sect, key, std::wstring(def));
+	}
+
 	// Sets the value to val. val must be streamable to a StringStream.
 	template<class _T>
 	void set(String sect, String key, _T val) {
