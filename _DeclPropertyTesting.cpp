@@ -4,9 +4,6 @@
 #include <utility>
 #include "DeclProperty.h"
 
-template<class...>
-using my_void_t = void;
-
 class PropOwner
 {
 public:
