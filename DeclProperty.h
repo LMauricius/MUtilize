@@ -71,7 +71,7 @@ class PropOwner
 public:
     using property_owner_t = PropOwner;
 
-    decl_property(abSum,
+    decl_property(a_prop,
         decl_get(int)
         {
             return this_owner->a;
@@ -84,7 +84,7 @@ public:
 
     int a;
 };
-enable_this_owner(PropOwner, abSum);
+enable_this_owner(PropOwner, a_prop);
 */
 
 /*
@@ -94,13 +94,11 @@ class PropOwner
 public:
     using property_owner_t = PropOwner;
 
-    decl_property(abSum,
+    decl_property(prop,
         enable_property_defaults(int);
         default_get();
         default_set();
     );
-
-    int a;
 };
 */
 
@@ -111,14 +109,12 @@ class PropOwner
 public:
     using property_owner_t = PropOwner;
 
-    decl_property(abSum,
+    decl_property(prop,
         enable_property_defaults(int);
         default_get();
     private:
         default_set();
     );
-
-    int a;
 };
 */
 
