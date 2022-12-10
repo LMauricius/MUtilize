@@ -60,6 +60,69 @@ Declares a default setter
 #define default_set() inline void operator=(_property_base_t&& val) {_property_value = val;}
 
 
+/*
+EXAMPLES
+*/
+
+/*
+// simple example
+class PropOwner
+{
+public:
+    using property_owner_t = PropOwner;
+
+    decl_property(abSum,
+        decl_get(int)
+        {
+            return this_owner->a;
+        }
+        void decl_set(int val)
+        {
+            this_owner->a = val;
+        }
+    );
+
+    int a;
+};
+enable_this_owner(PropOwner, abSum);
+*/
+
+/*
+// defaults example
+class PropOwner
+{
+public:
+    using property_owner_t = PropOwner;
+
+    decl_property(abSum,
+        enable_property_defaults(int);
+        default_get();
+        default_set();
+    );
+
+    int a;
+};
+*/
+
+/*
+// read-only example (writable by the PropOwner)
+class PropOwner
+{
+public:
+    using property_owner_t = PropOwner;
+
+    decl_property(abSum,
+        enable_property_defaults(int);
+        default_get();
+    private:
+        default_set();
+    );
+
+    int a;
+};
+*/
+
+
 
 /*
 UTILITIES
