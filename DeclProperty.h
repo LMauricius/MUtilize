@@ -25,13 +25,13 @@ member of its property type.
 Example:
     enable_this_owner(Owner::Member);
 */
-#define enable_this_owner(PROP_OWNER_T, MEMBER_NAME) const size_t decltype(PROP_OWNER_T::MEMBER_NAME)::_this_offset_from_owner = _PROP_OFFSET_OF_MEMBER(PROP_OWNER_T, MEMBER_NAME)
+#define enable_this_owner(PROP_OWNER_T, MEMBER_NAME) constexpr PROP_OWNER_T::property_##MEMBER_NAME##_t PROP_OWNER_T::* PROP_OWNER_T::property_##MEMBER_NAME##_t::_this_member_ptr() {return &PROP_OWNER_T::MEMBER_NAME;}
 
 /*
 Pointer to  the owner of the property.
 'this' points to the property member itself, so use 'this_owner' instead
 */
-#define this_owner ((property_owner_t*)((char*)this - _this_offset_from_owner))
+#define this_owner ((property_owner_t*)((char*)this - _PROP_OFFSET_OF_MEMBER_PTR(property_owner_t, _this_member_ptr())))
 
 
 /*
@@ -65,6 +65,7 @@ Declares a default setter
 UTILITIES
 */
 
+#define _PROP_OFFSET_OF_MEMBER_PTR(OWNER, MEMBER_PTR) ((char*)&((OWNER*)nullptr->*(MEMBER_PTR)) - (char*)nullptr)
 #define _PROP_OFFSET_OF_MEMBER(OWNER, MEMBER) ((char*)&((OWNER*)nullptr->*(&OWNER::MEMBER)) - (char*)nullptr)
 #define _stdOrCompact_decl_property_impl(NAME, ...) _compact_decl_property_impl(NAME, __VA_ARGS__)
 #define _std_decl_property_impl(NAME, ...)\
@@ -74,7 +75,7 @@ UTILITIES
 		__VA_ARGS__\
 		\
     private:\
-        static const size_t _this_offset_from_owner;\
+        static constexpr property_##NAME##_t PropOwner::* _this_member_ptr();\
 	}  NAME
 #define _compact_decl_property_impl(NAME, ...)\
 	struct property_##NAME##_t {\
@@ -83,7 +84,7 @@ UTILITIES
 		__VA_ARGS__\
 		\
     private:\
-        static const size_t _this_offset_from_owner;\
+        static constexpr property_##NAME##_t PropOwner::* _this_member_ptr();\
         char _placeholder[0]; /* allows the structure to have 0 size, non standard in c++*/\ 
 	} NAME
 
