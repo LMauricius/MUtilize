@@ -15,15 +15,17 @@ Declares a property member.
 To use it inside a class, you must typedef property_owner_t
 to the type of the class.
 */
-#define decl_property(NAME, DECL) _stdOrCompact_decl_property_impl(NAME, DECL)
+#define decl_property(NAME, ...) _stdOrCompact_decl_property_impl(NAME, __VA_ARGS__)
 
 /*
 Enables usage of this_owner inside a class' property's methods.
 Use AFTER defining the owner class.
+If enable_this_owner is used on a property, it has to be the single
+member of its property type.
 Example:
     enable_this_owner(Owner::Member);
 */
-#define enable_this_owner(PROP_OWNER_T, MEMBER_NAME) const size_t PROP_OWNER_T::property_##MEMBER_NAME##_t::_this_offset_from_owner = _OFFSET_OF_MEMBER(PROP_OWNER_T, MEMBER_NAME)
+#define enable_this_owner(PROP_OWNER_T, MEMBER_NAME) const size_t decltype(PROP_OWNER_T::MEMBER_NAME)::_this_offset_from_owner = _PROP_OFFSET_OF_MEMBER(PROP_OWNER_T, MEMBER_NAME)
 
 /*
 Pointer to  the owner of the property.
@@ -55,7 +57,7 @@ Declares a default getter
 /*
 Declares a default setter
 */
-#define default_set() inline _property_wrapper_t& operator=(_property_base_t&& val) {_property_value = val; return *this;}
+#define default_set() inline void operator=(_property_base_t&& val) {_property_value = val;}
 
 
 
@@ -63,32 +65,26 @@ Declares a default setter
 UTILITIES
 */
 
-#define _OFFSET_OF_MEMBER(OWNER, MEMBER) ((char*)&((OWNER*)nullptr->*(&OWNER::MEMBER)) - (char*)nullptr)
-#define _stdOrCompact_decl_property_impl(NAME, DECL) _compact_decl_property_impl(NAME, DECL)
-#define _std_decl_property_impl(NAME, DECL)\
-    struct property_##NAME##_t; friend property_##NAME##_t;\
-	struct property_##NAME##_t{\
+#define _PROP_OFFSET_OF_MEMBER(OWNER, MEMBER) ((char*)&((OWNER*)nullptr->*(&OWNER::MEMBER)) - (char*)nullptr)
+#define _stdOrCompact_decl_property_impl(NAME, ...) _compact_decl_property_impl(NAME, __VA_ARGS__)
+#define _std_decl_property_impl(NAME, ...)\
+	struct property_##NAME##_t {\
         friend property_owner_t;\
-        using property_wrapper_t = property_##NAME##_t;\
 		\
-		DECL\
+		__VA_ARGS__\
 		\
     private:\
         static const size_t _this_offset_from_owner;\
-		\
-	}; property_##NAME##_t NAME
-#define _compact_decl_property_impl(NAME, DECL)\
-    struct property_##NAME##_t; friend property_##NAME##_t;\
-	struct property_##NAME##_t{\
+	}  NAME
+#define _compact_decl_property_impl(NAME, ...)\
+	struct property_##NAME##_t {\
         friend property_owner_t;\
-        using property_wrapper_t = property_##NAME##_t;\
 		\
-		DECL\
+		__VA_ARGS__\
 		\
     private:\
         static const size_t _this_offset_from_owner;\
         char _placeholder[0]; /* allows the structure to have 0 size, non standard in c++*/\ 
-		\
-	}; property_##NAME##_t NAME
+	} NAME
 
 #endif
