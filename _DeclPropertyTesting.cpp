@@ -9,49 +9,40 @@ class PropOwner
 public:
     using property_owner_t = PropOwner;
 
-    /*struct property_memberSum_t; friend property_memberSum_t;
-	struct property_memberSum_t{
-        friend property_owner_t;
-		property_owner_t *owner;
-		property_memberSum_t(property_owner_t *owner) : owner(owner) {}
-		
-		operator int()
+    decl_property(abSum,
+        decl_get(int)
         {
-            return owner->a + owner->b;
-        }
-
-        //using getter_t = decltype(std::declval<property_memberSum_t>().get());
-	}; property_memberSum_t abSum = property_memberSum_t(this);*/
-    decl_property(int, abSum,
-        decl_get()
-        {
-            return owner->a + owner->b;
+            return this_owner->a + this_owner->b;
         }
         void decl_set(int val)
         {
-            owner->a = val - owner->b;
+            this_owner->a = val - this_owner->b;
         }
     );
 
     int a, b;
 };
+enable_this_owner(PropOwner, abSum);
 
 int main() 
 {
-    int a, b;
+    PropOwner ops;
+
+    std::cout << "PropOwner size: " << sizeof(ops) << std::endl;
+    std::cout << "Prop size: " << sizeof(ops.abSum) << std::endl;
 
     std::cout << "Enter a: " << std::endl;
-    std::cin >> a;
+    std::cin >> ops.a;
     std::cout << "Enter b: " << std::endl;
-    std::cin >> b;
+    std::cin >> ops.b;
 
-    PropOwner ops;
-    ops.a = a;
-    ops.b = b;
+    std::cout << "Sum is: " << (int)ops.abSum << std::endl;
 
-    std::cout << (int)ops.abSum << std::endl;
-    ops.abSum = 10;
-    std::cout << (int)ops.abSum << std::endl;
+    std::cout << "Enter new sum: " << std::endl;
+    int s;
+    std::cin >> s;
+    ops.abSum = s;
+    std::cout << "Sum is: " << (int)ops.abSum << std::endl;
 
     return 0;
 }
