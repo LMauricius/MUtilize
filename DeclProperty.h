@@ -15,7 +15,7 @@ Declares a property member.
 To use it inside a class, you must typedef property_owner_t
 to the type of the class.
 */
-#define decl_property(NAME, ...) _stdOrCompact_decl_property_impl(NAME, __VA_ARGS__)
+#define decl_property(NAME, ...) _decl_property_impl(NAME, __VA_ARGS__)
 
 /*
 Enables usage of this_owner inside a class' property's methods.
@@ -126,9 +126,8 @@ UTILITIES
 
 #define _PROP_OFFSET_OF_MEMBER_PTR(OWNER, MEMBER_PTR) ((char*)&((OWNER*)nullptr->*(MEMBER_PTR)) - (char*)nullptr)
 #define _PROP_OFFSET_OF_MEMBER(OWNER, MEMBER) ((char*)&((OWNER*)nullptr->*(&OWNER::MEMBER)) - (char*)nullptr)
-#define _stdOrCompact_decl_property_impl(NAME, ...) _compact_decl_property_impl(NAME, __VA_ARGS__)
-#define _std_decl_property_impl(NAME, ...)\
-	struct property_##NAME##_t {\
+#define _decl_property_impl(NAME, ...)\
+	[[no_unique_address]][[msvc::no_unique_address]] struct property_##NAME##_t {\
         friend property_owner_t;\
 		\
 		__VA_ARGS__\
@@ -136,15 +135,5 @@ UTILITIES
     private:\
         static constexpr property_##NAME##_t PropOwner::* _this_member_ptr();\
 	}  NAME
-#define _compact_decl_property_impl(NAME, ...)\
-	struct property_##NAME##_t {\
-        friend property_owner_t;\
-		\
-		__VA_ARGS__\
-		\
-    private:\
-        static constexpr property_##NAME##_t PropOwner::* _this_member_ptr();\
-        char _placeholder[0]; /* allows the structure to have 0 size, non standard in c++*/\ 
-	} NAME
 
 #endif
